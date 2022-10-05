@@ -2,6 +2,7 @@ local api = vim.api
 local devicons_present, devicons = pcall(require, "nvim-web-devicons")
 local fn = vim.fn
 local new_cmd = api.nvim_create_user_command
+local handle_duplicate_bufnames = require("nvchad_ui.tabufline").handle_duplicate_bufnames
 
 require("base46").load_highlight "tbline"
 
@@ -87,32 +88,11 @@ local function add_fileInfo(name, bufnr)
       or new_hl(icon_hl, "TbLineBufOff") .. " " .. icon
     )
 
-    -- check for same buffer names under different dirs
+    -- check for duplicate buffer names under different dirs
     for _, value in ipairs(vim.t.bufs) do
       if api.nvim_buf_is_valid(value) then
         if name == fn.fnamemodify(api.nvim_buf_get_name(value), ":t") and value ~= bufnr then
-          local other = {}
-          for match in (api.nvim_buf_get_name(value) .. "/"):gmatch("(.-)" .. "/") do
-            table.insert(other, match)
-          end
-
-          local current = {}
-          for match in (api.nvim_buf_get_name(bufnr) .. "/"):gmatch("(.-)" .. "/") do
-            table.insert(current, match)
-          end
-
-          name = current[#current]
-
-          for i = #current - 1, 1, -1 do
-            local value_current = current[i]
-            local other_current = other[i]
-
-            if value_current ~= other_current then
-              name = value_current .. "/../" .. name
-              break
-            end
-          end
-          break
+          name = handle_duplicate_bufnames(bufnr, value)
         end
       end
     end
